@@ -1,5 +1,5 @@
 """
-report_md.py —— 把所有产物汇总成 final_report.md。
+report_md.py —— aggregate every artefact into final_report.md.
 """
 
 from __future__ import annotations
@@ -33,21 +33,21 @@ def render_markdown(
     n_reassigned:        int,
     cluster_report_text: str,
 ) -> str:
-    """生成 markdown 报告字符串。"""
+    """Render the markdown report as a string."""
 
     L: List[str] = []
-    L.append("# GOP 聚类分析报告\n")
-    L.append(f"_自动生成于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_\n")
+    L.append("# GOP Clustering Report\n")
+    L.append(f"_Auto-generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_\n")
     L.append("---\n")
 
-    # ---------- 1. Pipeline & 参数 ----------
-    L.append("## 1. Pipeline 与超参数\n")
+    # ---------- 1. Pipeline & hyper-parameters ----------
+    L.append("## 1. Pipeline and Hyper-parameters\n")
     L.append("```")
     L.append("StandardScaler → PCA(95%) "
              + ("→ UMAP " if umap_enabled else "")
-             + "→ HDBSCAN → 少数派归并 → 代表点 + Z-score")
+             + "→ HDBSCAN → Minority Reassignment → Representative GOPs + Z-score")
     L.append("```\n")
-    L.append("| 阶段 | 参数 | 值 |")
+    L.append("| Stage | Parameter | Value |")
     L.append("|---|---|---|")
     L.append(f"| PCA | var_ratio | {cfg.pca.var_ratio} |")
     if umap_enabled:
@@ -65,29 +65,29 @@ def render_markdown(
     L.append(f"| Rep | candidate_ratio | {cfg.representative.candidate_ratio} |")
     L.append(f"| Z-score | top_k | {cfg.zscore.top_k} |\n")
 
-    # ---------- 2. 输入数据 ----------
-    L.append("## 2. 输入数据\n")
-    L.append(f"- 输入 CSV: `{cfg.data.input_csv}`")
-    L.append(f"- 行数（每行 = 一个 (videoSequence, baseQP, GOP_id) 三元组）: **{n_input_rows}**")
-    L.append(f"- 特征列数: **{n_feature_cols}**")
-    L.append(f"- 视频序列数: **{n_videos}**")
-    L.append(f"- QP 列表: **{qp_list}**\n")
+    # ---------- 2. Input data ----------
+    L.append("## 2. Input Data\n")
+    L.append(f"- Input CSV: `{cfg.data.input_csv}`")
+    L.append(f"- Rows (each row = one (videoSequence, baseQP, GOP_id) triple): **{n_input_rows}**")
+    L.append(f"- Feature columns: **{n_feature_cols}**")
+    L.append(f"- Number of video sequences: **{n_videos}**")
+    L.append(f"- QP list: **{qp_list}**\n")
 
-    # ---------- 3. 降维 ----------
-    L.append("## 3. 多视图聚合与降维\n")
-    L.append(f"- 多视图聚合后有效 GOP 数: **{n_mv_gops}**")
-    L.append(f"- 多视图特征维度: **{mv_feature_dim}**  ({n_feature_cols} 特征 × {len(qp_list)} QP)")
-    L.append(f"- PCA 保留维度: **{pca_kept_dim}**（累计方差 {pca_var_explained:.4f}）")
+    # ---------- 3. Aggregation & dimensionality reduction ----------
+    L.append("## 3. Multi-view Aggregation and Dimensionality Reduction\n")
+    L.append(f"- Valid GOPs after multi-view aggregation: **{n_mv_gops}**")
+    L.append(f"- Multi-view feature dimension: **{mv_feature_dim}**  ({n_feature_cols} features × {len(qp_list)} QPs)")
+    L.append(f"- PCA dimension kept: **{pca_kept_dim}** (cumulative variance {pca_var_explained:.4f})")
     if umap_enabled:
-        L.append(f"- UMAP 输出维度: **{embed_dim}**")
+        L.append(f"- UMAP output dimension: **{embed_dim}**")
     else:
-        L.append("- UMAP: 未启用，HDBSCAN 直接在 PCA 输出上做聚类\n")
+        L.append("- UMAP: disabled — HDBSCAN runs directly on PCA output\n")
     L.append("")
 
-    # ---------- 4. 聚类总览 ----------
-    L.append("## 4. 聚类总览\n")
-    L.append(f"- 簇数（不含噪声）: **{n_clusters}**")
-    L.append(f"- 噪声样本: **{n_noise} / {n_total}** ({n_noise/n_total:.1%})\n")
+    # ---------- 4. Clustering overview ----------
+    L.append("## 4. Clustering Overview\n")
+    L.append(f"- Clusters (excluding noise): **{n_clusters}**")
+    L.append(f"- Noise samples: **{n_noise} / {n_total}** ({n_noise/n_total:.1%})\n")
 
     df_valid = df_pca_clustered[df_pca_clustered["cluster"] != -1]
     cluster_sizes = (df_valid.groupby("cluster")
@@ -95,7 +95,7 @@ def render_markdown(
                               .reset_index(name="size")
                               .sort_values("cluster"))
 
-    L.append("| Cluster | Size | 主要 videoSequence |")
+    L.append("| Cluster | Size | Top videoSequences |")
     L.append("|---|---|---|")
     for c, sub in df_valid.groupby("cluster"):
         vc = sub["videoSequence"].value_counts().head(3)
@@ -106,28 +106,28 @@ def render_markdown(
         L.append(f"| -1 (noise) | {len(noise)} | — |")
     L.append("")
 
-    # ---------- 5. 代表 GOP & 视频分布（原始 txt 嵌入） ----------
-    L.append("## 5. 代表 GOP 与视频分布\n")
+    # ---------- 5. Representative GOPs & video distribution (raw txt) ----------
+    L.append("## 5. Representative GOPs and Video Distribution\n")
     L.append("```text")
     L.append(cluster_report_text.strip())
     L.append("```\n")
 
-    # ---------- 6. 少数派归并 ----------
-    L.append("## 6. 少数派归并\n")
+    # ---------- 6. Minority reassignment ----------
+    L.append("## 6. Minority Reassignment\n")
     if not cfg.reassign.enabled:
-        L.append("_（已禁用）_\n")
+        L.append("_(disabled)_\n")
     else:
-        L.append(f"- 策略: `{cfg.reassign.strategy}`")
-        L.append(f"- 被改动 cluster 标签的样本数: **{n_reassigned}**\n")
-        L.append("**videoSequence → 归并后 cluster 映射**:\n")
+        L.append(f"- Strategy: `{cfg.reassign.strategy}`")
+        L.append(f"- Samples whose cluster label was reassigned: **{n_reassigned}**\n")
+        L.append("**videoSequence → reassigned cluster mapping**:\n")
         L.append("| videoSequence | best_cluster |")
         L.append("|---|---|")
         for v, c in sorted(reassign_mapping.items()):
             L.append(f"| {v} | {int(c)} |")
         L.append("")
 
-    # ---------- 7. Top-K Z-score ----------
-    L.append(f"## 7. Top-{cfg.zscore.top_k} 区分特征 (按 |Z-score|)\n")
+    # ---------- 7. Top-K discriminative features ----------
+    L.append(f"## 7. Top-{cfg.zscore.top_k} Discriminative Features (ranked by |Z-score|)\n")
     for c in sorted(cluster_topk.keys()):
         label = "Cluster -1 (NOISE)" if c == -1 else f"Cluster {c}"
         L.append(f"### {label}\n")
@@ -137,9 +137,9 @@ def render_markdown(
             L.append(f"| {i} | `{row.feature}` | {row.z_score:+.3f} |")
         L.append("")
 
-    # ---------- 8. 产物清单 ----------
-    L.append("## 8. 产物清单\n")
-    L.append(f"全部写入 `{cfg.data.output_dir}/`:\n")
+    # ---------- 8. Artefact list ----------
+    L.append("## 8. Artefacts\n")
+    L.append(f"All written to `{cfg.data.output_dir}/`:\n")
     L.append("```")
     for fn in [
         cfg.filenames.cluster_samples,
@@ -152,7 +152,7 @@ def render_markdown(
         cfg.filenames.final_report,
     ]:
         L.append(f"  {fn}")
-    L.append(f"  cluster_<id>_top{cfg.zscore.top_k}_zscore_features.csv  (每簇一份)")
+    L.append(f"  cluster_<id>_top{cfg.zscore.top_k}_zscore_features.csv  (one per cluster)")
     L.append("```\n")
 
     return "\n".join(L)

@@ -1,13 +1,14 @@
 """
-representative.py —— 代表 GOP 选取 + 视频分布 + cluster_report.txt。
+representative.py —— representative-GOP selection + video distribution + cluster_report.txt.
 
-代表点策略 (medoid + 最远点; 与原版一致):
-    size ≤ small_threshold        →  1 个代表点（medoid）
-    small < size ≤ mid_threshold  →  2 个代表点
-    size > mid_threshold          →  3 个代表点
+Representative-point strategy (medoid + farthest point; matches the original project):
+    size <= small_threshold        ->  1 representative (medoid only)
+    small < size <= mid_threshold  ->  2 representatives
+    size > mid_threshold           ->  3 representatives
 
-    第 1 个代表点: PCA 空间中的全局 medoid
-    后续代表点 : 在距 medoid <= candidate_ratio 百分位的候选池里用最远点法依次选
+    First rep : the global medoid in PCA space.
+    Later reps: farthest-point selection from the candidate pool of points whose
+                distance to the medoid is within the `candidate_ratio` quantile.
 """
 
 from __future__ import annotations
@@ -78,7 +79,7 @@ def merge_pca_and_clusters(
     df_clustered: pd.DataFrame,
     join_keys:    List[str],
 ) -> pd.DataFrame:
-    """按 join_keys 把 PCA 坐标和 cluster 标签 inner-join 起来。"""
+    """Inner-join the PCA coordinates with the cluster labels on `join_keys`."""
     cols = join_keys + ["cluster", "confidence", "outlier_score"]
     return df_pca.merge(df_clustered[cols], on=join_keys, how="inner")
 
@@ -96,8 +97,8 @@ def generate_cluster_report(
     """
     Returns
     -------
-    report_text : 人可读 txt（与原版 cluster_report.txt 格式兼容）
-    summary_df  : 一个代表点一行
+    report_text : human-readable txt (format-compatible with the original cluster_report.txt)
+    summary_df  : one row per representative point
     """
     summary_rows: list = []
     lines: list = []
@@ -109,7 +110,7 @@ def generate_cluster_report(
         reps = _select_reps(sub, pca_cols, n_reps, candidate_ratio)
 
         lines.append(f"\n===== Cluster {c} | Size = {len(sub)} =====")
-        lines.append(f"Representatives ({len(reps)}):  # 代表点")
+        lines.append(f"Representatives ({len(reps)}):")
         for row in reps.itertuples(index=False):
             lines.append(
                 f"  [{row.rep_role}]  "
@@ -128,14 +129,14 @@ def generate_cluster_report(
                                      if pd.notna(row.outlier_score) else np.nan,
             })
 
-        lines.append("Video distribution:  # 视频序列分布")
+        lines.append("Video distribution:")
         for v, cnt in sub[video_col].value_counts().items():
             lines.append(f"  {v}: {cnt}")
 
     noise = df_pca_clustered[df_pca_clustered[cluster_col] == -1]
     if not noise.empty:
         lines.append(f"\n===== Cluster -1 (NOISE) | Size = {len(noise)} =====")
-        lines.append("Video distribution:  # 视频序列分布")
+        lines.append("Video distribution:")
         for v, cnt in noise[video_col].value_counts().items():
             lines.append(f"  {v}: {cnt}")
 
