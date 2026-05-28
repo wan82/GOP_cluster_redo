@@ -1,0 +1,68 @@
+# =============================================================
+# GOP_cluster_redo —— 复刻版聚类 pipeline 配置
+# 默认参数与原 GopCluster 项目一致；调参只改这里即可。
+# =============================================================
+
+data:
+  # 输入：rename 后的 GOP 特征表（每行 = 一个 (videoSequence, baseQP, GOP_id) 三元组）
+  input_csv: data/gop_all_featuresRename.csv
+  # 所有产物都写到这里
+  output_dir: outputs
+
+  # 三个 key 列；feature_cols 自动 = 所有非 key 列
+  key_cols:   [videoSequence, baseQP, GOP_id]
+  # 多视图聚合时按这俩做 group（每个 (videoSequence, GOP_id) 在 4 个 QP 下各一行）
+  join_keys:  [videoSequence, GOP_id]
+  qp_col:     baseQP
+  qp_list:   [22, 27, 32, 37]
+
+# ---------- 降维 ----------
+pca:
+  # 保留累计方差比例
+  var_ratio: 0.95
+
+umap:
+  # 关掉 UMAP 时直接拿 PCA 输出喂 HDBSCAN
+  enabled: true
+  n_components: 7
+  n_neighbors:  25
+  min_dist:     0.2
+  random_state: 42
+
+# ---------- 聚类 ----------
+hdbscan:
+  min_cluster_size: 8
+  min_samples:      8
+  cluster_selection_method: eom    # eom | leaf
+
+# ---------- 少数派归并 ----------
+reassign:
+  # 把每个 videoSequence 的样本归到它出现次数最多的 cluster
+  # （噪声 -1 不参与归并）
+  enabled: true
+  strategy: video_majority
+
+# ---------- 代表 GOP ----------
+representative:
+  # 簇大小 ≤ small_threshold       → 1 个代表点（仅 medoid）
+  # 小 < size ≤ mid_threshold      → 2 个代表点（medoid + 1 个覆盖点）
+  # size > mid_threshold           → 3 个代表点（medoid + 2 个覆盖点）
+  small_threshold: 50
+  mid_threshold:  100
+  # 候选池：距 medoid 在该百分位以内的点
+  candidate_ratio: 0.8
+
+# ---------- Z-score 区分特征 ----------
+zscore:
+  top_k: 10
+
+# ---------- 输出文件名（一般不用改） ----------
+filenames:
+  cluster_samples:            cluster_samples.csv
+  cluster_samples_reassigned: cluster_samples_reassigned.csv
+  cluster_report:             cluster_report.txt
+  cluster_representatives:    cluster_representatives.csv
+  cluster_feature_mean:       cluster_feature_mean.csv
+  cluster_feature_zscore:     cluster_feature_zscore_full.csv
+  cluster_zscore_summary:     cluster_zscore_topk_summary.txt
+  final_report:               final_report.md

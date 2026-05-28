@@ -1,0 +1,48 @@
+# =============================================================
+# GOP_cluster_redo —— conda 环境定义
+#
+# 用法:
+#   conda env create -f environment.yml
+#   conda activate GOP_cluster_redo
+#   make run        # 或 python -m src.main --config config/config.yaml
+#
+# 为什么用 conda 而不是 pip / venv:
+#   UMAP + HDBSCAN 的浮点结果会因为 BLAS/LAPACK 二进制不同发生漂移。
+#   pip wheel 装的 numpy/scipy/umap-learn 链接的是 wheel 自带的 OpenBLAS,
+#   conda-forge 装的链接的是 conda-forge 编译的 OpenBLAS, 输出不完全一致,
+#   小数据集 (264 个 GOP) 上足够把 BQTerrace 那 19 个边界点的 cluster 归属翻面,
+#   导致 7 cluster 变 6 cluster。所以这里 **强制 conda-forge**。
+# =============================================================
+
+name: GOP_cluster_redo
+channels:
+  - conda-forge
+  - nodefaults    # 不要走 anaconda defaults, 否则可能拉到 MKL 版本
+
+dependencies:
+  # ---- Python ----
+  - python=3.10            # umap-learn 0.5.7 + numba 0.61 在 3.10 上验证过
+
+  # ---- 数值计算核心 (跟原 DataS 环境一致) ----
+  - numpy=2.2.4            # 注: conda 解析依赖时实际给到 2.2.4, 比 DataS 的 2.1.3 略新但稳定
+  - pandas=2.2.3
+  - scipy=1.15.2
+  - scikit-learn=1.7.0
+
+  # ---- UMAP 及其依赖 (核心数值, 必须 conda-forge 拿) ----
+  - umap-learn=0.5.7
+  - numba=0.61.2
+  - llvmlite=0.44.0
+  - pynndescent=0.5.13
+
+  # ---- sklearn 隐式依赖 (锁版本以防漂) ----
+  - joblib=1.5.1
+  - threadpoolctl=3.6.0
+
+  # ---- 仅本项目用 ----
+  - pyyaml=6.0.3
+
+  # ---- pip 装 (这些没有 BLAS 链接, 用 pip 不影响数值复现) ----
+  - pip
+  - pip:
+      - hdbscan==0.8.40        # conda-forge 没有 0.8.40, 走 pip; 纯 Python, 无 BLAS
