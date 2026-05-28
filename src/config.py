@@ -1,6 +1,7 @@
 """
-config.py —— 读取 YAML 配置，转成 dataclass 方便 IDE 提示。
-所有路径都相对 project root（config.yaml 所在目录的上一级）解析。
+config.py —— load the YAML config and convert it into dataclasses for IDE completion.
+All paths are resolved relative to the project root (one level above the directory
+that holds config.yaml).
 """
 
 from __future__ import annotations
@@ -91,7 +92,7 @@ class Config:
 # ---------- loader ----------
 
 def _abs(root: Path, p: str | Path) -> Path:
-    """相对路径相对 project root 解析；绝对路径原样返回。"""
+    """Resolve relative paths against `root`; absolute paths are returned as-is."""
     p = Path(p)
     return p if p.is_absolute() else (root / p).resolve()
 

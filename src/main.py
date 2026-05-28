@@ -1,6 +1,7 @@
 """
-main.py —— pipeline 入口。
-用法:
+main.py —— pipeline entry point.
+
+Usage:
     python -m src.main --config config/config.yaml
 """
 
@@ -29,7 +30,7 @@ from src.report_md      import render_markdown, write_markdown
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/config.yaml",
-                    help="YAML 配置文件路径")
+                    help="Path to the YAML config file")
     return ap.parse_args()
 
 

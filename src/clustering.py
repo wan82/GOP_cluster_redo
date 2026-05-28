@@ -1,5 +1,5 @@
 """
-clustering.py —— HDBSCAN 聚类（保留 prediction_data 以便软聚类）。
+clustering.py —— HDBSCAN clustering (keeps prediction_data for soft clustering).
 """
 
 from __future__ import annotations
@@ -18,8 +18,10 @@ def hdbscan_cluster(
     cluster_selection_method: str = "eom",
 ) -> Tuple[pd.DataFrame, object]:
     """
-    在 df_embed[embed_cols] 上跑 HDBSCAN。
-    embed_cols 既可以是 UMAP 列也可以是 PCA 列 —— 取决于是否启用 UMAP。
+    Run HDBSCAN on df_embed[embed_cols].
+
+    `embed_cols` can be either UMAP columns or PCA columns, depending on whether
+    UMAP is enabled upstream.
     """
     import hdbscan
 

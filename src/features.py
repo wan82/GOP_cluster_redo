@@ -1,9 +1,11 @@
 """
-features.py —— 多视图特征聚合。
-按 (videoSequence, GOP_id) 把 4 个 QP 下的特征向量横向拼接，
-得到形状 (n_gops, 72*len(qp_list)) 的多视图矩阵。
+features.py —— multi-view feature aggregation.
 
-输出列名风格: {base_feature}_qp{qp}, 例如 mean_bits_qp22。
+For every (videoSequence, GOP_id), horizontally concatenate the feature vectors
+across the 4 QP values into a single multi-view row, producing a matrix of shape
+(n_gops, 72 * len(qp_list)).
+
+Output column naming convention: ``{base_feature}_qp{qp}``, e.g. ``mean_bits_qp22``.
 """
 
 from __future__ import annotations
@@ -24,16 +26,16 @@ def build_multiview_features(
     """
     Parameters
     ----------
-    df            : 长表（每行 = 一个 (videoSequence, baseQP, GOP_id) 三元组）
-    feature_cols  : 72 个 base 特征列名
-    join_keys     : 唯一标识一个 GOP 的列
-    qp_col        : QP 所在列
-    qp_list       : 所有要求齐全的 QP 值；任何一个 QP 缺失会整组丢弃
+    df            : long-format table (one row per (videoSequence, baseQP, GOP_id) triple)
+    feature_cols  : the 72 base feature column names
+    join_keys     : columns that uniquely identify one GOP
+    qp_col        : the column that holds the QP value
+    qp_list       : every QP value that must be present; a GOP missing any QP is dropped
 
     Returns
     -------
-    df_mv     : 多视图特征 DataFrame, shape = (n_valid_gops, 72*|qp_list|)
-    df_mv_key : 与 df_mv 同行对应的 key 列 DataFrame
+    df_mv     : multi-view feature DataFrame, shape = (n_valid_gops, 72 * |qp_list|)
+    df_mv_key : key-column DataFrame aligned row-by-row with df_mv
     """
     records:     list = []
     key_records: list = []

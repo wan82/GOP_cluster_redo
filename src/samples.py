@@ -1,9 +1,10 @@
 """
-samples.py —— 生成 cluster_samples.csv（中间件）。
+samples.py —— produce cluster_samples.csv (the intermediate artefact).
 
-形态：每行 = 输入 CSV 的一个原始 (videoSequence, baseQP, GOP_id) 行；
-列 = 72 个 base 特征做完 StandardScaler 后的 z-score 值 + cluster + 3 个 key。
-聚类标签按 (videoSequence, GOP_id) 从多视图聚类结果广播回来。
+Shape: one row per input-CSV (videoSequence, baseQP, GOP_id) triple;
+columns = 72 base features z-scored via StandardScaler + cluster + 3 key columns.
+Cluster labels are broadcast back from the multi-view clustering result by
+joining on (videoSequence, GOP_id).
 """
 
 from __future__ import annotations
@@ -25,15 +26,17 @@ def build_cluster_samples(
     """
     Parameters
     ----------
-    df_raw        : 输入长表（每行 = 一个 (videoSequence, baseQP, GOP_id) 三元组）
-    feature_cols  : 72 个 base 特征列名
-    df_clustered  : 多视图聚类结果（必须含 join_keys + 'cluster'）
-    join_keys     : 用来把 cluster 标签 join 回原表的键（通常 [videoSequence, GOP_id]）
-    key_cols      : 输出表里要保留的 key 列（通常 [videoSequence, baseQP, GOP_id]）
+    df_raw        : input long-format table (one row per (videoSequence, baseQP, GOP_id) triple)
+    feature_cols  : the 72 base feature column names
+    df_clustered  : multi-view clustering result (must contain `join_keys` and 'cluster')
+    join_keys     : columns used to join cluster labels back to the long table
+                    (typically [videoSequence, GOP_id])
+    key_cols      : key columns to retain in the output table
+                    (typically [videoSequence, baseQP, GOP_id])
 
     Returns
     -------
-    DataFrame: 72 维 z-score + cluster + key_cols
+    DataFrame: 72 z-scored features + cluster + key_cols
     """
     # 1) 对原始 72 维特征做 z-score 标准化（与原版 cluster_samples.csv 对齐）
     scaler = StandardScaler()

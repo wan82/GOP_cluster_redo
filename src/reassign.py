@@ -1,14 +1,15 @@
 """
-reassign.py —— 少数派归并 (cluster correction)。
+reassign.py —— minority reassignment (cluster correction).
 
-思路（来自 readme）:
-    若某一 cluster 内部多数来自某个 videoSequence，少数来自另一个，
-    则将少数样本并入"它的 videoSequence 在哪个 cluster 占多数"的那个 cluster。
+Idea (from the original readme):
+    If a cluster is mostly composed of one videoSequence but contains a few
+    samples from another, move those minority samples into the cluster that
+    holds the majority of THEIR videoSequence.
 
-实现:
-    1. 仅在非噪声样本里建 video → best_cluster 映射;
-       best_cluster = argmax_{c != -1} count(videoSequence==v, cluster==c)
-    2. 非噪声样本依此映射重新打标; 噪声样本保持 cluster = -1。
+Implementation:
+    1. Build a video -> best_cluster mapping using only non-noise samples;
+       best_cluster = argmax_{c != -1} count(videoSequence == v, cluster == c).
+    2. Relabel every non-noise sample via this mapping; noise samples stay -1.
 """
 
 from __future__ import annotations
@@ -27,13 +28,14 @@ def reassign_minority(
     """
     Parameters
     ----------
-    df_samples : 含 video_col 与 cluster_col 的 DataFrame（通常是 cluster_samples）
+    df_samples : DataFrame containing `video_col` and `cluster_col`
+                 (usually the cluster_samples table)
 
     Returns
     -------
-    df_out  : 复制后并把 out_col 改成归并后 cluster 的 DataFrame
-    mapping : video → best_cluster 字典
-    n_changed : 被改动 cluster 的样本数
+    df_out    : a copy of df_samples with `out_col` set to the reassigned cluster
+    mapping   : video -> best_cluster dictionary
+    n_changed : number of samples whose cluster label changed
     """
     df = df_samples.copy()
 

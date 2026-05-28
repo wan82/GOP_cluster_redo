@@ -1,5 +1,5 @@
 """
-reduction.py —— 标准化 → PCA → (可选) UMAP。
+reduction.py —— StandardScaler -> PCA -> (optional) UMAP.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ def standardize_and_pca(
     df_features: pd.DataFrame,
     var_ratio:   float = 0.95,
 ) -> Tuple[np.ndarray, PCA, StandardScaler]:
-    """对 df_features 做 StandardScaler + PCA(保留 var_ratio 方差)。"""
+    """Apply StandardScaler + PCA (keeping `var_ratio` of cumulative variance) to df_features."""
     print(f"\n[PCA] input dim: {df_features.shape[1]}")
     scaler   = StandardScaler()
     X_scaled = scaler.fit_transform(df_features.values)
@@ -45,8 +45,8 @@ def umap_reduce(
     min_dist:     float = 0.2,
     random_state: int   = 42,
 ) -> Tuple[pd.DataFrame, object]:
-    """对 X 做 UMAP，把坐标附到 df_key 上。"""
-    assert len(X) == len(df_key), "X 与 df_key 行数不一致"
+    """Run UMAP on X and attach the resulting coordinates to df_key."""
+    assert len(X) == len(df_key), "X and df_key must have the same number of rows"
 
     reducer = umap.UMAP(
         n_components = n_components,

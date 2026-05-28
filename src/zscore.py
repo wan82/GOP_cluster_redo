@@ -1,11 +1,13 @@
 """
-zscore.py —— 簇语义分析:
-    1. 计算每个 cluster 的多视图特征均值 (cluster_feature_mean.csv)
-    2. 相对全局均值/std 做 z-score, 再按 |z| 排序取 Top-K (区分特征)
-    3. 输出:
+zscore.py —— per-cluster semantic analysis:
+    1. Compute the per-cluster mean of the multi-view features
+       (cluster_feature_mean.csv).
+    2. Z-score against the global mean/std and rank by |z| to extract the
+       Top-K discriminative features.
+    3. Outputs:
         cluster_feature_mean.csv
         cluster_feature_zscore_full.csv
-        cluster_{c}_top{K}_zscore_features.csv (含 noise → noise_top{K}…)
+        cluster_{c}_top{K}_zscore_features.csv  (noise becomes noise_top{K}_...)
         cluster_zscore_topk_summary.txt
 """
 
@@ -32,8 +34,8 @@ def analyze_zscore(
     """
     Returns
     -------
-    df_cluster_mean : 每簇 × 特征 均值
-    df_zscore       : 每簇 × 特征 z-score
+    df_cluster_mean : per-cluster × per-feature mean
+    df_zscore       : per-cluster × per-feature z-score
     cluster_topk    : {cluster_id: top-K DataFrame}
     """
     os.makedirs(out_dir, exist_ok=True)
