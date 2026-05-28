@@ -8,38 +8,6 @@
 
 ---
 
-> ## ⚠️ 重要：跑出来是 6 cluster 还是 7 cluster？
->
-> **正确答案是 7 cluster**（与原版 GopCluster 一致）。
->
-> 如果你跑出来是 **6 cluster**，几乎可以肯定是**部署环境问题**，**不是代码 bug** ——
-> 用了 `pip install` 而不是 `conda install` 装数学库（numpy / scipy / umap-learn）。
->
-> **原因**：UMAP + HDBSCAN 的输出会被底层 BLAS/LAPACK 二进制影响。即便包**版本号一字不差**：
-> - PyPI 上的 wheel 链接的是 wheel 自带的 OpenBLAS
-> - conda-forge 编译的 .so 链接的是 conda-forge 编译的 OpenBLAS
->
-> 两者浮点累积顺序不同，UMAP 嵌入会有纳米级漂移。
->
-> **具体被影响的是哪个簇？**
->
-> 在 conda 路径下（正确的 7 cluster），有一个独立簇 `Cluster 2` 专门容纳 `BQTerrace` 序列的 19 个 GOP，这个簇代表 BQTerrace 自身的编码行为模式。
->
-> 在 pip 路径下（错误的 6 cluster），这 19 个 BQTerrace GOP 会被吸进**大杂烩簇**（在 7-cluster 视图里是 `Cluster 3`，size = 154），跟下面这 11 个视频序列混在一起：
->
-> ```
-> BQMall, BQSquare, BasketballDrill, BasketballDrive, BasketballPass,
-> BlowingBubbles, PartyScene, RaceHorses, RaceHorsesC, Kimono, ParkScene
-> ```
->
-> 也就是说，pip 路径下大杂烩簇会从 154 个 GOP 涨到 173 个，BQTerrace 不再有自己的代表 GOP。
-> 其它六个高 confidence 簇（Campfire / ToddlerFountain2 / Cactus / TrafficFlow / DaylightRoad2 群 等）在两种路径下都稳定，不受影响。
->
-> **解决办法**：用 `make all`（默认走 conda），不要走 `make install-venv` 路径。
-> 详见下面"[环境注意事项](#环境注意事项-)"。
-
----
-
 ## 目录结构
 
 ```
@@ -97,6 +65,38 @@ make distclean    # 再删 conda 环境
 
 > 如果不想用 conda，可以走 `make install-venv` / `make run-venv` 的 pip 回退路径。
 > 但 **pip 回退不保证 cluster 数完全复现**，详见下面"环境注意事项"。
+
+---
+
+> ## ⚠️ 重要：跑完后是 6 cluster 还是 7 cluster？
+>
+> **正确答案是 7 cluster**（与原版 GopCluster 一致）。
+>
+> 如果你跑出来是 **6 cluster**，几乎可以肯定是**部署环境问题**，**不是代码 bug** ——
+> 用了 `pip install` 而不是 `conda install` 装数学库（numpy / scipy / umap-learn）。
+>
+> **原因**：UMAP + HDBSCAN 的输出会被底层 BLAS/LAPACK 二进制影响。即便包**版本号一字不差**：
+> - PyPI 上的 wheel 链接的是 wheel 自带的 OpenBLAS
+> - conda-forge 编译的 .so 链接的是 conda-forge 编译的 OpenBLAS
+>
+> 两者浮点累积顺序不同，UMAP 嵌入会有纳米级漂移。
+>
+> **具体被影响的是哪个簇？**
+>
+> 在 conda 路径下（正确的 7 cluster），有一个独立簇 `Cluster 2` 专门容纳 `BQTerrace` 序列的 19 个 GOP，这个簇代表 BQTerrace 自身的编码行为模式。
+>
+> 在 pip 路径下（错误的 6 cluster），这 19 个 BQTerrace GOP 会被吸进**大杂烩簇**（在 7-cluster 视图里是 `Cluster 3`，size = 154），跟下面这 11 个视频序列混在一起：
+>
+> ```
+> BQMall, BQSquare, BasketballDrill, BasketballDrive, BasketballPass,
+> BlowingBubbles, PartyScene, RaceHorses, RaceHorsesC, Kimono, ParkScene
+> ```
+>
+> 也就是说，pip 路径下大杂烩簇会从 154 个 GOP 涨到 173 个，BQTerrace 不再有自己的代表 GOP。
+> 其它六个高 confidence 簇（Campfire / ToddlerFountain2 / Cactus / TrafficFlow / DaylightRoad2 群 等）在两种路径下都稳定，不受影响。
+>
+> **解决办法**：用 `make all`（默认走 conda），不要走 `make install-venv` 路径。
+> 详见下面"[环境注意事项](#环境注意事项-)"。
 
 ---
 
